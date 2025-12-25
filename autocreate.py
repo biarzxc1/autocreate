@@ -18,7 +18,7 @@ from datetime import datetime
 # =============================================
 # PUT YOUR STEEL API KEY HERE 👇
 # =============================================
-STEEL_API_KEY = "your-steel-api-key-here"
+STEEL_API_KEY = "ste-h9rofstUq2bjiCKCBNZTwKiAHZbD6hHvTJoS851Mxo78Nis447DesAUwQnDPEWyw5HLwVN6hwEKnELHNN0CIT19INHcNQVr0ygF"
 # =============================================
 # Get your key at: https://steel.dev
 # =============================================
