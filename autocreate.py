@@ -1,18 +1,17 @@
 """
-Facebook Auto Registration with Steel SDK + Playwright
-=======================================================
+Facebook Auto Registration - Steel SDK Only
+============================================
 
-SETUP (run these commands):
-    pip install steel-sdk playwright faker
-    python -m playwright install chromium
+SETUP:
+    pip install steel-sdk faker
 
 USAGE:
     python fb_auto.py your_email@gmail.com
 """
 
-import asyncio
 import random
 import sys
+import time
 from datetime import datetime
 
 # =============================================
@@ -30,22 +29,19 @@ STEEL_API_KEY = "ste-h9rofstUq2bjiCKCBNZTwKiAHZbD6hHvTJoS851Mxo78Nis447DesAUwQnD
 MALE_NAMES = [
     "James", "John", "Robert", "Michael", "William", "David", "Joseph", 
     "Daniel", "Matthew", "Chris", "Ryan", "Kevin", "Justin", "Brandon", 
-    "Tyler", "Kyle", "Nathan", "Adam", "Dylan", "Ethan", "Noah", "Mason", 
-    "Logan", "Lucas", "Jack", "Alexander", "Benjamin", "Henry", "Sebastian"
+    "Tyler", "Kyle", "Nathan", "Adam", "Dylan", "Ethan", "Noah", "Mason"
 ]
 
 FEMALE_NAMES = [
     "Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Emily", 
     "Jessica", "Sarah", "Ashley", "Amanda", "Stephanie", "Nicole", "Jennifer", 
-    "Elizabeth", "Michelle", "Samantha", "Lauren", "Rachel", "Katherine", 
-    "Victoria", "Hannah", "Natalie", "Grace", "Lily", "Chloe", "Zoey"
+    "Elizabeth", "Michelle", "Samantha", "Lauren", "Rachel", "Victoria"
 ]
 
 LAST_NAMES = [
     "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", 
     "Davis", "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", 
-    "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", 
-    "Harris", "Clark", "Lewis", "Young", "Walker", "Hall", "Allen", "King"
+    "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White"
 ]
 
 
@@ -60,12 +56,10 @@ def generate_data(email):
     
     last_name = random.choice(LAST_NAMES)
     
-    # Random birthday (18-35 years old)
     year = datetime.now().year - random.randint(18, 35)
     month = random.randint(1, 12)
     day = random.randint(1, 28)
     
-    # Random password (letters + numbers + symbols)
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$"
     password = ''.join(random.choices(chars, k=12))
     
@@ -81,51 +75,47 @@ def generate_data(email):
     }
 
 
-async def run_registration(email):
-    """Run the Facebook registration automation."""
+def run_registration(email):
+    """Run Facebook registration using Steel SDK."""
     
     # Check API key
     if STEEL_API_KEY == "your-steel-api-key-here":
         print("\n" + "=" * 55)
         print("  ❌ ERROR: STEEL API KEY NOT SET!")
         print("=" * 55)
-        print("\n  1. Open fb_auto.py in a text editor")
-        print("\n  2. Find this line (around line 20):")
+        print("\n  1. Open fb_auto.py")
+        print("\n  2. Find line 20:")
         print('     STEEL_API_KEY = "your-steel-api-key-here"')
-        print("\n  3. Replace with your actual API key:")
+        print("\n  3. Replace with your key:")
         print('     STEEL_API_KEY = "sk-steel-xxxxxxxxxxxxx"')
-        print("\n  4. Get your FREE key at: https://steel.dev")
-        print("\n" + "=" * 55)
+        print("\n  4. Get FREE key at: https://steel.dev")
+        print("=" * 55)
         return
     
-    # Try importing
+    # Import Steel
     try:
         from steel import Steel
-        from playwright.async_api import async_playwright
-    except ImportError as e:
-        print("\n❌ Missing packages!")
-        print("\nRun these commands:")
-        print("  pip install steel-sdk playwright faker")
-        print("  python -m playwright install chromium")
-        print(f"\nError: {e}")
+    except ImportError:
+        print("\n❌ Steel SDK not installed!")
+        print("\nRun: pip install steel-sdk")
         return
     
     # Generate data
-    print("\n🎲 Generating random registration data...\n")
+    print("\n🎲 Generating random data...\n")
     data = generate_data(email)
     
-    print("+" + "-" * 48 + "+")
-    print("|" + " GENERATED DATA".center(48) + "|")
-    print("+" + "-" * 48 + "+")
-    print(f"|  First Name:  {data['first_name']:<32}|")
-    print(f"|  Last Name:   {data['last_name']:<32}|")
-    print(f"|  Email:       {data['email']:<32}|")
-    print(f"|  Password:    {data['password']:<32}|")
-    print(f"|  Birthday:    {data['month']}/{data['day']}/{data['year']:<27}|")
-    print(f"|  Gender:      {data['gender']:<32}|")
-    print("+" + "-" * 48 + "+")
+    print("+" + "-" * 45 + "+")
+    print("|" + " GENERATED DATA".center(45) + "|")
+    print("+" + "-" * 45 + "+")
+    print(f"|  First Name:  {data['first_name']:<29}|")
+    print(f"|  Last Name:   {data['last_name']:<29}|")
+    print(f"|  Email:       {data['email']:<29}|")
+    print(f"|  Password:    {data['password']:<29}|")
+    print(f"|  Birthday:    {data['month']}/{data['day']}/{data['year']:<24}|")
+    print(f"|  Gender:      {data['gender']:<29}|")
+    print("+" + "-" * 45 + "+")
     
-    # Create Steel client
+    # Create Steel client and session
     print("\n🚀 Creating Steel browser session...")
     
     try:
@@ -135,148 +125,178 @@ async def run_registration(email):
             solve_captcha=True
         )
     except Exception as e:
-        print(f"\n❌ Failed to create Steel session!")
-        print(f"   Error: {e}")
-        print("\n   Make sure your API key is correct.")
+        print(f"\n❌ Failed to create session: {e}")
         return
     
-    # Show session info
-    print("\n" + "=" * 55)
-    print("  🟢 STEEL SESSION CREATED!")
-    print("=" * 55)
+    # Show URLs
+    print("\n" + "=" * 60)
+    print("  🟢 SESSION CREATED!")
+    print("=" * 60)
     print(f"\n  Session ID: {session.id}")
-    print(f"\n  ╔══════════════════════════════════════════════════╗")
-    print(f"  ║  👁️  LIVE VIEW URL - OPEN THIS IN BROWSER:       ║")
-    print(f"  ╚══════════════════════════════════════════════════╝")
+    print("\n  ┌─────────────────────────────────────────────────────────┐")
+    print("  │  👁️  LIVE VIEW URL (open in browser to watch):          │")
+    print("  └─────────────────────────────────────────────────────────┘")
     print(f"\n  {session.session_viewer_url}")
-    print(f"\n  WebSocket: {session.websocket_url}")
-    print("\n" + "=" * 55)
+    print(f"\n  WebSocket URL: {session.websocket_url}")
+    print("\n" + "=" * 60)
     
-    print("\n⏳ Open the LIVE VIEW URL above to watch!")
-    print("   Starting in 5 seconds...\n")
-    await asyncio.sleep(5)
+    # Build JavaScript to fill the form
+    js_script = f'''
+    async function fillForm() {{
+        // Wait for page to load
+        await new Promise(r => setTimeout(r, 2000));
+        
+        // Fill first name
+        const firstName = document.querySelector('input[name="firstname"]');
+        if (firstName) {{
+            firstName.value = "{data['first_name']}";
+            firstName.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        }}
+        
+        // Fill last name
+        const lastName = document.querySelector('input[name="lastname"]');
+        if (lastName) {{
+            lastName.value = "{data['last_name']}";
+            lastName.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        }}
+        
+        // Fill email
+        const email = document.querySelector('input[name="reg_email__"]');
+        if (email) {{
+            email.value = "{data['email']}";
+            email.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        }}
+        
+        // Wait and fill confirm email if it appears
+        await new Promise(r => setTimeout(r, 1000));
+        const emailConfirm = document.querySelector('input[name="reg_email_confirmation__"]');
+        if (emailConfirm) {{
+            emailConfirm.value = "{data['email']}";
+            emailConfirm.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        }}
+        
+        // Fill password
+        const password = document.querySelector('input[name="reg_passwd__"]');
+        if (password) {{
+            password.value = "{data['password']}";
+            password.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        }}
+        
+        // Select birthday month
+        const month = document.querySelector('select[name="birthday_month"]');
+        if (month) {{
+            month.value = "{data['month']}";
+            month.dispatchEvent(new Event('change', {{ bubbles: true }}));
+        }}
+        
+        // Select birthday day
+        const day = document.querySelector('select[name="birthday_day"]');
+        if (day) {{
+            day.value = "{data['day']}";
+            day.dispatchEvent(new Event('change', {{ bubbles: true }}));
+        }}
+        
+        // Select birthday year
+        const year = document.querySelector('select[name="birthday_year"]');
+        if (year) {{
+            year.value = "{data['year']}";
+            year.dispatchEvent(new Event('change', {{ bubbles: true }}));
+        }}
+        
+        // Select gender
+        const genderValue = "{1 if data['gender'] == 'female' else 2}";
+        const gender = document.querySelector('input[name="sex"][value="' + genderValue + '"]');
+        if (gender) {{
+            gender.click();
+        }}
+        
+        return "Form filled!";
+    }}
+    fillForm();
+    '''
     
     try:
-        async with async_playwright() as p:
-            # Connect to Steel browser
-            print("🔗 Connecting to Steel browser...")
-            
-            browser = await p.chromium.connect_over_cdp(
-                f"wss://connect.steel.dev?apiKey={STEEL_API_KEY}&sessionId={session.id}"
-            )
-            
-            # Get page
-            context = browser.contexts[0]
-            if context.pages:
-                page = context.pages[0]
-            else:
-                page = await context.new_page()
-            
-            # Go to Facebook registration
-            print("📍 Opening Facebook registration page...")
-            await page.goto("https://www.facebook.com/r.php", timeout=60000)
-            await asyncio.sleep(3)
-            
-            # Fill form
-            print("\n✏️  Filling registration form...\n")
-            
-            # First name
-            print(f"   [1/6] First name: {data['first_name']}")
-            await page.fill('input[name="firstname"]', data['first_name'])
-            await asyncio.sleep(0.5)
-            
-            # Last name
-            print(f"   [2/6] Last name: {data['last_name']}")
-            await page.fill('input[name="lastname"]', data['last_name'])
-            await asyncio.sleep(0.5)
-            
-            # Email
-            print(f"   [3/6] Email: {data['email']}")
-            await page.fill('input[name="reg_email__"]', data['email'])
-            await asyncio.sleep(1)
-            
-            # Confirm email if field appears
-            try:
-                confirm_email = page.locator('input[name="reg_email_confirmation__"]')
-                if await confirm_email.is_visible(timeout=2000):
-                    print(f"   [3b]  Confirming email...")
-                    await confirm_email.fill(data['email'])
-                    await asyncio.sleep(0.5)
-            except:
-                pass
-            
-            # Password
-            print(f"   [4/6] Password: {data['password']}")
-            await page.fill('input[name="reg_passwd__"]', data['password'])
-            await asyncio.sleep(0.5)
-            
-            # Birthday
-            print(f"   [5/6] Birthday: {data['month']}/{data['day']}/{data['year']}")
-            await page.select_option('select[name="birthday_month"]', str(data['month']))
-            await asyncio.sleep(0.3)
-            await page.select_option('select[name="birthday_day"]', str(data['day']))
-            await asyncio.sleep(0.3)
-            await page.select_option('select[name="birthday_year"]', str(data['year']))
-            await asyncio.sleep(0.5)
-            
-            # Gender
-            print(f"   [6/6] Gender: {data['gender']}")
-            if data['gender'] == "female":
-                await page.click('input[name="sex"][value="1"]')
-            else:
-                await page.click('input[name="sex"][value="2"]')
-            await asyncio.sleep(0.5)
-            
-            # Done
-            print("\n" + "=" * 55)
-            print("  ✅ FORM FILLED SUCCESSFULLY!")
-            print("=" * 55)
-            print(f"\n  👁️  Watch/submit at: {session.session_viewer_url}")
-            print("\n  ⚠️  Form NOT auto-submitted (for safety)")
-            print("      Click 'Sign Up' manually in the live view")
-            print("\n" + "=" * 55)
-            
-            # Keep open
-            print("\n⏳ Browser open for 60 seconds. Press Ctrl+C to exit.\n")
-            await asyncio.sleep(60)
-            
-            await browser.close()
-            
+        # Navigate to Facebook registration
+        print("\n📍 Opening Facebook registration page...")
+        client.sessions.context.navigate(
+            session_id=session.id,
+            url="https://www.facebook.com/r.php"
+        )
+        
+        print("⏳ Waiting for page to load...")
+        time.sleep(5)
+        
+        # Execute JavaScript to fill form
+        print("✏️  Filling form with generated data...")
+        client.sessions.context.execute(
+            session_id=session.id,
+            script=js_script
+        )
+        
+        print("\n" + "=" * 60)
+        print("  ✅ DONE!")
+        print("=" * 60)
+        print(f"\n  👁️  View result: {session.session_viewer_url}")
+        print("\n  ⚠️  Form NOT submitted (for safety)")
+        print("      Open the live view and click 'Sign Up' manually")
+        print("=" * 60)
+        
+        # Keep session alive
+        print("\n⏳ Session stays open for 60 seconds...")
+        print("   Press Ctrl+C to exit\n")
+        time.sleep(60)
+        
     except Exception as e:
-        print(f"\n❌ Error during automation: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"\n❌ Error: {e}")
+        
+        # Fallback: just show the data and URL
+        print("\n" + "=" * 60)
+        print("  ℹ️  MANUAL MODE")
+        print("=" * 60)
+        print(f"\n  Open this URL in browser:")
+        print(f"  {session.session_viewer_url}")
+        print(f"\n  Then manually fill in:")
+        print(f"    First Name: {data['first_name']}")
+        print(f"    Last Name:  {data['last_name']}")
+        print(f"    Email:      {data['email']}")
+        print(f"    Password:   {data['password']}")
+        print(f"    Birthday:   {data['month']}/{data['day']}/{data['year']}")
+        print(f"    Gender:     {data['gender']}")
+        print("=" * 60)
+        
+        print("\n⏳ Session open for 120 seconds...")
+        time.sleep(120)
         
     finally:
-        print("\n🧹 Releasing Steel session...")
+        print("\n🧹 Closing session...")
         try:
             client.sessions.release(session.id)
-            print("✅ Session closed.")
+            print("✅ Done!")
         except:
             pass
 
 
 def main():
     if len(sys.argv) < 2:
-        print("\n" + "=" * 50)
+        print("\n" + "=" * 45)
         print("  Facebook Auto Registration")
-        print("  Using Steel SDK + Playwright")
-        print("=" * 50)
+        print("  Steel SDK Only")
+        print("=" * 45)
         print("\n  Usage:")
-        print("    python fb_auto.py <your_email>")
+        print("    python fb_auto.py <email>")
         print("\n  Example:")
         print("    python fb_auto.py john@gmail.com")
-        print("\n" + "=" * 50)
+        print("=" * 45)
         return
     
     email = sys.argv[1]
     
     print("\n" + "=" * 55)
     print("  🔵 FACEBOOK AUTO REGISTRATION")
-    print("  Using Steel SDK + Playwright")
+    print("  Steel SDK Only (No Playwright)")
     print("=" * 55)
     
-    asyncio.run(run_registration(email))
+    run_registration(email)
 
 
 if __name__ == "__main__":
