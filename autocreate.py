@@ -1,14 +1,15 @@
 """
-Facebook Auto Registration - Steel SDK Only
-============================================
+Facebook Auto Registration - Using Steel API directly
+======================================================
 
 SETUP:
-    pip install steel-sdk faker
+    pip install requests
 
 USAGE:
     python fb_auto.py your_email@gmail.com
 """
 
+import requests
 import random
 import sys
 import time
@@ -24,6 +25,9 @@ STEEL_API_KEY = "ste-h9rofstUq2bjiCKCBNZTwKiAHZbD6hHvTJoS851Mxo78Nis447DesAUwQnD
 # Get your free key at: https://steel.dev
 # =============================================
 
+
+# Steel API base URL
+STEEL_API_URL = "https://api.steel.dev/v1"
 
 # Name lists
 MALE_NAMES = [
@@ -75,8 +79,66 @@ def generate_data(email):
     }
 
 
+def create_session(api_key):
+    """Create a Steel browser session."""
+    headers = {
+        "Steel-Api-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "useProxy": True,
+        "solveCaptcha": True
+    }
+    
+    response = requests.post(
+        f"{STEEL_API_URL}/sessions",
+        headers=headers,
+        json=payload
+    )
+    
+    if response.status_code == 200 or response.status_code == 201:
+        return response.json()
+    else:
+        raise Exception(f"Failed to create session: {response.status_code} - {response.text}")
+
+
+def release_session(api_key, session_id):
+    """Release a Steel browser session."""
+    headers = {
+        "Steel-Api-Key": api_key
+    }
+    
+    requests.delete(
+        f"{STEEL_API_URL}/sessions/{session_id}",
+        headers=headers
+    )
+
+
+def scrape_page(api_key, session_id, url):
+    """Navigate to a URL using Steel scrape endpoint."""
+    headers = {
+        "Steel-Api-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "url": url,
+        "sessionId": session_id,
+        "waitFor": 3000
+    }
+    
+    response = requests.post(
+        f"{STEEL_API_URL}/scrape",
+        headers=headers,
+        json=payload
+    )
+    
+    return response.json() if response.status_code == 200 else None
+
+
 def run_registration(email):
-    """Run Facebook registration using Steel SDK."""
+    """Run Facebook registration."""
     
     # Check API key
     if STEEL_API_KEY == "your-steel-api-key-here":
@@ -90,14 +152,6 @@ def run_registration(email):
         print('     STEEL_API_KEY = "sk-steel-xxxxxxxxxxxxx"')
         print("\n  4. Get FREE key at: https://steel.dev")
         print("=" * 55)
-        return
-    
-    # Import Steel
-    try:
-        from steel import Steel
-    except ImportError:
-        print("\n❌ Steel SDK not installed!")
-        print("\nRun: pip install steel-sdk")
         return
     
     # Generate data
@@ -115,172 +169,144 @@ def run_registration(email):
     print(f"|  Gender:      {data['gender']:<29}|")
     print("+" + "-" * 45 + "+")
     
-    # Create Steel client and session
+    # Create session
     print("\n🚀 Creating Steel browser session...")
     
     try:
-        client = Steel(steel_api_key=STEEL_API_KEY)
-        session = client.sessions.create(
-            use_proxy=True,
-            solve_captcha=True
-        )
+        session = create_session(STEEL_API_KEY)
     except Exception as e:
         print(f"\n❌ Failed to create session: {e}")
         return
     
-    # Show URLs
-    print("\n" + "=" * 60)
-    print("  🟢 SESSION CREATED!")
-    print("=" * 60)
-    print(f"\n  Session ID: {session.id}")
-    print("\n  ┌─────────────────────────────────────────────────────────┐")
-    print("  │  👁️  LIVE VIEW URL (open in browser to watch):          │")
-    print("  └─────────────────────────────────────────────────────────┘")
-    print(f"\n  {session.session_viewer_url}")
-    print(f"\n  WebSocket URL: {session.websocket_url}")
-    print("\n" + "=" * 60)
+    session_id = session.get("id")
+    session_viewer_url = session.get("sessionViewerUrl")
+    websocket_url = session.get("websocketUrl")
     
-    # Build JavaScript to fill the form
-    js_script = f'''
-    async function fillForm() {{
-        // Wait for page to load
-        await new Promise(r => setTimeout(r, 2000));
-        
+    # Show URLs
+    print("\n" + "=" * 65)
+    print("  🟢 SESSION CREATED!")
+    print("=" * 65)
+    print(f"\n  Session ID: {session_id}")
+    print("\n  ┌───────────────────────────────────────────────────────────────┐")
+    print("  │  👁️  LIVE VIEW URL - OPEN THIS IN YOUR BROWSER:               │")
+    print("  └───────────────────────────────────────────────────────────────┘")
+    print(f"\n  {session_viewer_url}")
+    print(f"\n  WebSocket URL:")
+    print(f"  {websocket_url}")
+    print("\n" + "=" * 65)
+    
+    # JavaScript to fill the form
+    js_fill_form = f'''
+    (function() {{
         // Fill first name
-        const firstName = document.querySelector('input[name="firstname"]');
-        if (firstName) {{
-            firstName.value = "{data['first_name']}";
-            firstName.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        }}
+        var fn = document.querySelector('input[name="firstname"]');
+        if (fn) {{ fn.value = "{data['first_name']}"; fn.dispatchEvent(new Event('input', {{bubbles:true}})); }}
         
-        // Fill last name
-        const lastName = document.querySelector('input[name="lastname"]');
-        if (lastName) {{
-            lastName.value = "{data['last_name']}";
-            lastName.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        }}
+        // Fill last name  
+        var ln = document.querySelector('input[name="lastname"]');
+        if (ln) {{ ln.value = "{data['last_name']}"; ln.dispatchEvent(new Event('input', {{bubbles:true}})); }}
         
         // Fill email
-        const email = document.querySelector('input[name="reg_email__"]');
-        if (email) {{
-            email.value = "{data['email']}";
-            email.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        }}
-        
-        // Wait and fill confirm email if it appears
-        await new Promise(r => setTimeout(r, 1000));
-        const emailConfirm = document.querySelector('input[name="reg_email_confirmation__"]');
-        if (emailConfirm) {{
-            emailConfirm.value = "{data['email']}";
-            emailConfirm.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        }}
+        var em = document.querySelector('input[name="reg_email__"]');
+        if (em) {{ em.value = "{data['email']}"; em.dispatchEvent(new Event('input', {{bubbles:true}})); }}
         
         // Fill password
-        const password = document.querySelector('input[name="reg_passwd__"]');
-        if (password) {{
-            password.value = "{data['password']}";
-            password.dispatchEvent(new Event('input', {{ bubbles: true }}));
-        }}
+        var pw = document.querySelector('input[name="reg_passwd__"]');
+        if (pw) {{ pw.value = "{data['password']}"; pw.dispatchEvent(new Event('input', {{bubbles:true}})); }}
         
-        // Select birthday month
-        const month = document.querySelector('select[name="birthday_month"]');
-        if (month) {{
-            month.value = "{data['month']}";
-            month.dispatchEvent(new Event('change', {{ bubbles: true }}));
-        }}
+        // Birthday
+        var mo = document.querySelector('select[name="birthday_month"]');
+        if (mo) {{ mo.value = "{data['month']}"; mo.dispatchEvent(new Event('change', {{bubbles:true}})); }}
         
-        // Select birthday day
-        const day = document.querySelector('select[name="birthday_day"]');
-        if (day) {{
-            day.value = "{data['day']}";
-            day.dispatchEvent(new Event('change', {{ bubbles: true }}));
-        }}
+        var dy = document.querySelector('select[name="birthday_day"]');
+        if (dy) {{ dy.value = "{data['day']}"; dy.dispatchEvent(new Event('change', {{bubbles:true}})); }}
         
-        // Select birthday year
-        const year = document.querySelector('select[name="birthday_year"]');
-        if (year) {{
-            year.value = "{data['year']}";
-            year.dispatchEvent(new Event('change', {{ bubbles: true }}));
-        }}
+        var yr = document.querySelector('select[name="birthday_year"]');
+        if (yr) {{ yr.value = "{data['year']}"; yr.dispatchEvent(new Event('change', {{bubbles:true}})); }}
         
-        // Select gender
-        const genderValue = "{1 if data['gender'] == 'female' else 2}";
-        const gender = document.querySelector('input[name="sex"][value="' + genderValue + '"]');
-        if (gender) {{
-            gender.click();
-        }}
+        // Gender
+        var gv = "{1 if data['gender'] == 'female' else 2}";
+        var gn = document.querySelector('input[name="sex"][value="' + gv + '"]');
+        if (gn) {{ gn.click(); }}
         
-        return "Form filled!";
-    }}
-    fillForm();
+        // Confirm email if exists
+        setTimeout(function() {{
+            var ce = document.querySelector('input[name="reg_email_confirmation__"]');
+            if (ce) {{ ce.value = "{data['email']}"; ce.dispatchEvent(new Event('input', {{bubbles:true}})); }}
+        }}, 1000);
+        
+        return "done";
+    }})();
     '''
     
     try:
-        # Navigate to Facebook registration
-        print("\n📍 Opening Facebook registration page...")
-        client.sessions.context.navigate(
-            session_id=session.id,
-            url="https://www.facebook.com/r.php"
-        )
+        # Navigate to Facebook
+        print("\n📍 Opening Facebook registration...")
+        scrape_page(STEEL_API_KEY, session_id, "https://www.facebook.com/r.php")
         
-        print("⏳ Waiting for page to load...")
+        print("⏳ Page loading...")
         time.sleep(5)
         
-        # Execute JavaScript to fill form
-        print("✏️  Filling form with generated data...")
-        client.sessions.context.execute(
-            session_id=session.id,
-            script=js_script
+        # Try to execute JS via actions endpoint
+        print("✏️  Attempting to fill form...")
+        
+        headers = {
+            "Steel-Api-Key": STEEL_API_KEY,
+            "Content-Type": "application/json"
+        }
+        
+        # Use the actions/execute endpoint
+        response = requests.post(
+            f"{STEEL_API_URL}/sessions/{session_id}/actions/execute",
+            headers=headers,
+            json={"script": js_fill_form}
         )
         
-        print("\n" + "=" * 60)
-        print("  ✅ DONE!")
-        print("=" * 60)
-        print(f"\n  👁️  View result: {session.session_viewer_url}")
-        print("\n  ⚠️  Form NOT submitted (for safety)")
-        print("      Open the live view and click 'Sign Up' manually")
-        print("=" * 60)
-        
-        # Keep session alive
-        print("\n⏳ Session stays open for 60 seconds...")
-        print("   Press Ctrl+C to exit\n")
-        time.sleep(60)
+        if response.status_code == 200:
+            print("✅ Form filled successfully!")
+        else:
+            print(f"⚠️  Auto-fill may not have worked (status: {response.status_code})")
         
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        
-        # Fallback: just show the data and URL
-        print("\n" + "=" * 60)
-        print("  ℹ️  MANUAL MODE")
-        print("=" * 60)
-        print(f"\n  Open this URL in browser:")
-        print(f"  {session.session_viewer_url}")
-        print(f"\n  Then manually fill in:")
-        print(f"    First Name: {data['first_name']}")
-        print(f"    Last Name:  {data['last_name']}")
-        print(f"    Email:      {data['email']}")
-        print(f"    Password:   {data['password']}")
-        print(f"    Birthday:   {data['month']}/{data['day']}/{data['year']}")
-        print(f"    Gender:     {data['gender']}")
-        print("=" * 60)
-        
-        print("\n⏳ Session open for 120 seconds...")
+        print(f"\n⚠️  Auto-fill error: {e}")
+    
+    # Show final info
+    print("\n" + "=" * 65)
+    print("  📋 COPY THIS DATA AND USE IN LIVE VIEW:")
+    print("=" * 65)
+    print(f"\n  First Name:  {data['first_name']}")
+    print(f"  Last Name:   {data['last_name']}")
+    print(f"  Email:       {data['email']}")
+    print(f"  Password:    {data['password']}")
+    print(f"  Birthday:    {data['month']}/{data['day']}/{data['year']}")
+    print(f"  Gender:      {data['gender']}")
+    print("\n" + "=" * 65)
+    print(f"\n  👁️  LIVE VIEW: {session_viewer_url}")
+    print("\n  Open the URL above to see the browser and fill/submit the form!")
+    print("=" * 65)
+    
+    # Keep session alive
+    print("\n⏳ Session open for 120 seconds. Press Ctrl+C to exit.\n")
+    
+    try:
         time.sleep(120)
-        
-    finally:
-        print("\n🧹 Closing session...")
-        try:
-            client.sessions.release(session.id)
-            print("✅ Done!")
-        except:
-            pass
+    except KeyboardInterrupt:
+        print("\n\n👋 Interrupted by user")
+    
+    # Cleanup
+    print("🧹 Closing session...")
+    try:
+        release_session(STEEL_API_KEY, session_id)
+        print("✅ Done!")
+    except:
+        pass
 
 
 def main():
     if len(sys.argv) < 2:
         print("\n" + "=" * 45)
         print("  Facebook Auto Registration")
-        print("  Steel SDK Only")
+        print("  Using Steel API (requests only)")
         print("=" * 45)
         print("\n  Usage:")
         print("    python fb_auto.py <email>")
@@ -293,7 +319,7 @@ def main():
     
     print("\n" + "=" * 55)
     print("  🔵 FACEBOOK AUTO REGISTRATION")
-    print("  Steel SDK Only (No Playwright)")
+    print("  Using Steel API (no SDK needed)")
     print("=" * 55)
     
     run_registration(email)
