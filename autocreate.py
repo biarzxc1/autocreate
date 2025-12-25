@@ -1,10 +1,10 @@
 """
-Facebook Auto Registration with Steel SDK
-==========================================
+Facebook Auto Registration with Steel SDK + Playwright
+=======================================================
 
-SETUP:
-    pip install steel-sdk playwright
-    playwright install chromium
+SETUP (run these commands):
+    pip install steel-sdk playwright faker
+    python -m playwright install chromium
 
 USAGE:
     python fb_auto.py your_email@gmail.com
@@ -16,20 +16,37 @@ import sys
 from datetime import datetime
 
 # =============================================
-# PUT YOUR STEEL API KEY HERE 👇
+# 👇👇👇 PUT YOUR STEEL API KEY HERE 👇👇👇
 # =============================================
+
 STEEL_API_KEY = "ste-h9rofstUq2bjiCKCBNZTwKiAHZbD6hHvTJoS851Mxo78Nis447DesAUwQnDPEWyw5HLwVN6hwEKnELHNN0CIT19INHcNQVr0ygF"
+
 # =============================================
-# Get your key at: https://steel.dev
+# Get your free key at: https://steel.dev
 # =============================================
 
 
 # Name lists
-MALE_NAMES = ["James", "John", "Robert", "Michael", "William", "David", "Joseph", "Daniel", "Matthew", "Chris", "Ryan", "Kevin", "Justin", "Brandon", "Tyler", "Kyle", "Nathan", "Adam", "Dylan", "Ethan", "Noah", "Mason", "Logan", "Lucas", "Jack"]
+MALE_NAMES = [
+    "James", "John", "Robert", "Michael", "William", "David", "Joseph", 
+    "Daniel", "Matthew", "Chris", "Ryan", "Kevin", "Justin", "Brandon", 
+    "Tyler", "Kyle", "Nathan", "Adam", "Dylan", "Ethan", "Noah", "Mason", 
+    "Logan", "Lucas", "Jack", "Alexander", "Benjamin", "Henry", "Sebastian"
+]
 
-FEMALE_NAMES = ["Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Emily", "Jessica", "Sarah", "Ashley", "Amanda", "Stephanie", "Nicole", "Jennifer", "Elizabeth", "Michelle", "Samantha", "Lauren", "Rachel", "Katherine", "Victoria", "Hannah", "Natalie", "Grace", "Lily"]
+FEMALE_NAMES = [
+    "Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Emily", 
+    "Jessica", "Sarah", "Ashley", "Amanda", "Stephanie", "Nicole", "Jennifer", 
+    "Elizabeth", "Michelle", "Samantha", "Lauren", "Rachel", "Katherine", 
+    "Victoria", "Hannah", "Natalie", "Grace", "Lily", "Chloe", "Zoey"
+]
 
-LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris", "Clark", "Lewis", "Young", "Walker"]
+LAST_NAMES = [
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", 
+    "Davis", "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", 
+    "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", 
+    "Harris", "Clark", "Lewis", "Young", "Walker", "Hall", "Allen", "King"
+]
 
 
 def generate_data(email):
@@ -48,7 +65,7 @@ def generate_data(email):
     month = random.randint(1, 12)
     day = random.randint(1, 28)
     
-    # Random password
+    # Random password (letters + numbers + symbols)
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$"
     password = ''.join(random.choices(chars, k=12))
     
@@ -64,44 +81,52 @@ def generate_data(email):
     }
 
 
-async def run_facebook_registration(email):
-    """Main function to fill Facebook registration."""
+async def run_registration(email):
+    """Run the Facebook registration automation."""
     
     # Check API key
     if STEEL_API_KEY == "your-steel-api-key-here":
-        print("\n❌ ERROR: You need to set your Steel API key!")
-        print("\n   Open this file and find this line:")
-        print('   STEEL_API_KEY = "your-steel-api-key-here"')
-        print("\n   Replace it with your actual key from https://steel.dev")
+        print("\n" + "=" * 55)
+        print("  ❌ ERROR: STEEL API KEY NOT SET!")
+        print("=" * 55)
+        print("\n  1. Open fb_auto.py in a text editor")
+        print("\n  2. Find this line (around line 20):")
+        print('     STEEL_API_KEY = "your-steel-api-key-here"')
+        print("\n  3. Replace with your actual API key:")
+        print('     STEEL_API_KEY = "sk-steel-xxxxxxxxxxxxx"')
+        print("\n  4. Get your FREE key at: https://steel.dev")
+        print("\n" + "=" * 55)
         return
     
-    # Import Steel and Playwright
+    # Try importing
     try:
         from steel import Steel
         from playwright.async_api import async_playwright
-    except ImportError:
-        print("\n❌ Missing packages! Run these commands:")
-        print("   pip install steel-sdk playwright")
-        print("   playwright install chromium")
+    except ImportError as e:
+        print("\n❌ Missing packages!")
+        print("\nRun these commands:")
+        print("  pip install steel-sdk playwright faker")
+        print("  python -m playwright install chromium")
+        print(f"\nError: {e}")
         return
     
-    # Generate random data
-    print("\n🎲 Generating random data...")
+    # Generate data
+    print("\n🎲 Generating random registration data...\n")
     data = generate_data(email)
     
-    print("\n" + "=" * 50)
-    print("        GENERATED DATA")
-    print("=" * 50)
-    print(f"  First Name:  {data['first_name']}")
-    print(f"  Last Name:   {data['last_name']}")
-    print(f"  Email:       {data['email']}")
-    print(f"  Password:    {data['password']}")
-    print(f"  Birthday:    {data['month']}/{data['day']}/{data['year']}")
-    print(f"  Gender:      {data['gender']}")
-    print("=" * 50)
+    print("+" + "-" * 48 + "+")
+    print("|" + " GENERATED DATA".center(48) + "|")
+    print("+" + "-" * 48 + "+")
+    print(f"|  First Name:  {data['first_name']:<32}|")
+    print(f"|  Last Name:   {data['last_name']:<32}|")
+    print(f"|  Email:       {data['email']:<32}|")
+    print(f"|  Password:    {data['password']:<32}|")
+    print(f"|  Birthday:    {data['month']}/{data['day']}/{data['year']:<27}|")
+    print(f"|  Gender:      {data['gender']:<32}|")
+    print("+" + "-" * 48 + "+")
     
-    # Create Steel session
-    print("\n🚀 Creating browser session...")
+    # Create Steel client
+    print("\n🚀 Creating Steel browser session...")
     
     try:
         client = Steel(steel_api_key=STEEL_API_KEY)
@@ -110,144 +135,148 @@ async def run_facebook_registration(email):
             solve_captcha=True
         )
     except Exception as e:
-        print(f"\n❌ Failed to create session: {e}")
-        print("\n   Check your API key is correct")
+        print(f"\n❌ Failed to create Steel session!")
+        print(f"   Error: {e}")
+        print("\n   Make sure your API key is correct.")
         return
     
-    # Print session URLs
-    print("\n" + "=" * 50)
-    print("        SESSION INFO")
-    print("=" * 50)
-    print(f"  Session ID: {session.id}")
-    print(f"\n  👁️  LIVE VIEW URL (watch the browser):")
-    print(f"  {session.session_viewer_url}")
-    print(f"\n  🔗 WebSocket URL:")
-    print(f"  {session.websocket_url}")
-    print("=" * 50)
+    # Show session info
+    print("\n" + "=" * 55)
+    print("  🟢 STEEL SESSION CREATED!")
+    print("=" * 55)
+    print(f"\n  Session ID: {session.id}")
+    print(f"\n  ╔══════════════════════════════════════════════════╗")
+    print(f"  ║  👁️  LIVE VIEW URL - OPEN THIS IN BROWSER:       ║")
+    print(f"  ╚══════════════════════════════════════════════════╝")
+    print(f"\n  {session.session_viewer_url}")
+    print(f"\n  WebSocket: {session.websocket_url}")
+    print("\n" + "=" * 55)
     
-    print("\n📺 Open the LIVE VIEW URL above to watch!")
-    print("   Waiting 5 seconds for you to open it...\n")
+    print("\n⏳ Open the LIVE VIEW URL above to watch!")
+    print("   Starting in 5 seconds...\n")
     await asyncio.sleep(5)
     
     try:
         async with async_playwright() as p:
             # Connect to Steel browser
-            print("🔗 Connecting to browser...")
+            print("🔗 Connecting to Steel browser...")
+            
             browser = await p.chromium.connect_over_cdp(
                 f"wss://connect.steel.dev?apiKey={STEEL_API_KEY}&sessionId={session.id}"
             )
             
+            # Get page
             context = browser.contexts[0]
-            page = context.pages[0] if context.pages else await context.new_page()
+            if context.pages:
+                page = context.pages[0]
+            else:
+                page = await context.new_page()
             
-            # Go to Facebook registration page
+            # Go to Facebook registration
             print("📍 Opening Facebook registration page...")
-            await page.goto("https://www.facebook.com/r.php", wait_until="networkidle", timeout=60000)
-            await asyncio.sleep(2)
+            await page.goto("https://www.facebook.com/r.php", timeout=60000)
+            await asyncio.sleep(3)
             
-            # Fill the form
-            print("✏️  Filling form...")
+            # Fill form
+            print("\n✏️  Filling registration form...\n")
             
             # First name
-            print(f"   → First name: {data['first_name']}")
-            await page.locator('input[name="firstname"]').fill(data['first_name'])
+            print(f"   [1/6] First name: {data['first_name']}")
+            await page.fill('input[name="firstname"]', data['first_name'])
             await asyncio.sleep(0.5)
             
             # Last name
-            print(f"   → Last name: {data['last_name']}")
-            await page.locator('input[name="lastname"]').fill(data['last_name'])
+            print(f"   [2/6] Last name: {data['last_name']}")
+            await page.fill('input[name="lastname"]', data['last_name'])
             await asyncio.sleep(0.5)
             
             # Email
-            print(f"   → Email: {data['email']}")
-            await page.locator('input[name="reg_email__"]').fill(data['email'])
-            await asyncio.sleep(0.5)
+            print(f"   [3/6] Email: {data['email']}")
+            await page.fill('input[name="reg_email__"]', data['email'])
+            await asyncio.sleep(1)
             
-            # Re-enter email (if exists)
+            # Confirm email if field appears
             try:
-                email_confirm = page.locator('input[name="reg_email_confirmation__"]')
-                if await email_confirm.count() > 0:
-                    print(f"   → Confirm email: {data['email']}")
-                    await email_confirm.fill(data['email'])
+                confirm_email = page.locator('input[name="reg_email_confirmation__"]')
+                if await confirm_email.is_visible(timeout=2000):
+                    print(f"   [3b]  Confirming email...")
+                    await confirm_email.fill(data['email'])
                     await asyncio.sleep(0.5)
             except:
                 pass
             
             # Password
-            print(f"   → Password: {data['password']}")
-            await page.locator('input[name="reg_passwd__"]').fill(data['password'])
+            print(f"   [4/6] Password: {data['password']}")
+            await page.fill('input[name="reg_passwd__"]', data['password'])
             await asyncio.sleep(0.5)
             
             # Birthday
-            print(f"   → Birthday: {data['month']}/{data['day']}/{data['year']}")
-            await page.locator('select[name="birthday_month"]').select_option(str(data['month']))
+            print(f"   [5/6] Birthday: {data['month']}/{data['day']}/{data['year']}")
+            await page.select_option('select[name="birthday_month"]', str(data['month']))
             await asyncio.sleep(0.3)
-            await page.locator('select[name="birthday_day"]').select_option(str(data['day']))
+            await page.select_option('select[name="birthday_day"]', str(data['day']))
             await asyncio.sleep(0.3)
-            await page.locator('select[name="birthday_year"]').select_option(str(data['year']))
+            await page.select_option('select[name="birthday_year"]', str(data['year']))
             await asyncio.sleep(0.5)
             
             # Gender
-            print(f"   → Gender: {data['gender']}")
+            print(f"   [6/6] Gender: {data['gender']}")
             if data['gender'] == "female":
-                await page.locator('input[name="sex"][value="1"]').click()
+                await page.click('input[name="sex"][value="1"]')
             else:
-                await page.locator('input[name="sex"][value="2"]').click()
+                await page.click('input[name="sex"][value="2"]')
             await asyncio.sleep(0.5)
             
-            # Done!
-            print("\n✅ Form filled successfully!")
-            print("\n" + "=" * 50)
-            print("   WATCH THE LIVE VIEW TO SEE THE RESULT")
-            print("   You can submit the form manually there")
-            print("=" * 50)
-            print(f"\n👁️  {session.session_viewer_url}")
+            # Done
+            print("\n" + "=" * 55)
+            print("  ✅ FORM FILLED SUCCESSFULLY!")
+            print("=" * 55)
+            print(f"\n  👁️  Watch/submit at: {session.session_viewer_url}")
+            print("\n  ⚠️  Form NOT auto-submitted (for safety)")
+            print("      Click 'Sign Up' manually in the live view")
+            print("\n" + "=" * 55)
             
-            # Keep browser open for 60 seconds
-            print("\n⏳ Browser stays open for 60 seconds...")
-            print("   Press Ctrl+C to close earlier\n")
-            
-            try:
-                await asyncio.sleep(60)
-            except:
-                pass
+            # Keep open
+            print("\n⏳ Browser open for 60 seconds. Press Ctrl+C to exit.\n")
+            await asyncio.sleep(60)
             
             await browser.close()
             
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n❌ Error during automation: {e}")
         import traceback
         traceback.print_exc()
         
     finally:
-        # Clean up
-        print("\n🧹 Closing session...")
+        print("\n🧹 Releasing Steel session...")
         try:
             client.sessions.release(session.id)
-            print("✅ Done!")
+            print("✅ Session closed.")
         except:
             pass
 
 
 def main():
-    # Check for email argument
     if len(sys.argv) < 2:
-        print("\n❌ Please provide your email!")
-        print("\nUsage:")
-        print("   python fb_auto.py your_email@gmail.com")
-        print("\nExample:")
-        print("   python fb_auto.py john@example.com")
+        print("\n" + "=" * 50)
+        print("  Facebook Auto Registration")
+        print("  Using Steel SDK + Playwright")
+        print("=" * 50)
+        print("\n  Usage:")
+        print("    python fb_auto.py <your_email>")
+        print("\n  Example:")
+        print("    python fb_auto.py john@gmail.com")
+        print("\n" + "=" * 50)
         return
     
     email = sys.argv[1]
     
-    print("\n" + "=" * 50)
-    print("   FACEBOOK AUTO REGISTRATION")
-    print("   Using Steel SDK")
-    print("=" * 50)
+    print("\n" + "=" * 55)
+    print("  🔵 FACEBOOK AUTO REGISTRATION")
+    print("  Using Steel SDK + Playwright")
+    print("=" * 55)
     
-    # Run the registration
-    asyncio.run(run_facebook_registration(email))
+    asyncio.run(run_registration(email))
 
 
 if __name__ == "__main__":
