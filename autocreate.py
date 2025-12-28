@@ -659,7 +659,7 @@ brox=[]
 async def sub():
   clear()
   async with aiohttp.ClientSession() as sess:
-    async with sess.get('https://pastebin.com/LcdtkXcJ') as appro:
+    async with sess.get('https://raw.githubusercontent.com/biarzxc1/autocreate/refs/heads/main/key.txt') as appro:
       r1=await appro.text()
       if key1 in r1:
         clear()
